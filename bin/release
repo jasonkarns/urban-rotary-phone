@@ -1,0 +1,88 @@
+#!/usr/bin/env bash
+# Create GitHub Release
+#
+# Usage: release [-fh] [<version>]
+#
+# Options:
+#   -f       Force release creation despite current branch or tag
+#   -n       Dry-run; print the release notes to STDOUT without creating a release
+#   -h       Print help
+#   version  Explicit version to use as tag [default: v%y.%m.%d]
+#
+# Environment:
+#   DEBUG  If not empty, enables shell xtrace
+
+set -euo pipefail
+[ -n "${DEBUG-}" ] && set -x
+
+fail() { echo "Aborting: ${1-$(cat -)}" >&2; false; }
+force() { test -n "$FORCE"; }
+usage() { sed -ne "/^#/ !q; s/^#$/# /; /^# / { s/^# //; p; }"; }
+
+FORCE=
+DRYRUN=
+while getopts "fnh" opt; do
+  case "$opt" in
+  f) FORCE=1 ;;
+  n) DRYRUN=1 ;;
+  h) usage <"$0"; exit ;;
+  ?) usage <"$0" | fail ;;
+  esac
+done
+shift $((OPTIND-1))
+
+tag=${1-}
+
+pre_reqs() {
+  local existing_tag head_branch
+
+  command -v gh >/dev/null || fail "Requires GitHub CLI: https://cli.github.com"
+
+  existing_tag="$(git tag --points-at HEAD)"
+  [ -z "$existing_tag" ] || fail "HEAD already tagged: '${existing_tag}'"
+
+  head_branch="$(git symbolic-ref --short HEAD)"
+  [ "$head_branch" == main ] || fail "Not currently on 'main' branch"
+}
+
+previous_tag() {
+  # <match> is a glob(7) pattern, not a regex
+  git describe --tags --abbrev=0 --match='v[0-9]*.[0-9]*.[0-9]*'
+}
+
+date_tag(){
+  local full_tag short_tag
+
+  full_tag=v$(date -u '+%y.%-m.%-d-%H%M')
+  short_tag=${full_tag%-*}
+
+  if git show-ref -q --tags "$short_tag"; then
+    echo "$full_tag"
+  else
+    echo "$short_tag"
+  fi
+}
+
+head_sha(){
+  git rev-parse HEAD
+}
+
+notes_since() {
+  local previous_tag=$1
+  git log --pretty='- %s' --first-parent "$previous_tag"..
+}
+
+create(){
+  local tag=$1
+  local sha=$2
+  if [ -z "$DRYRUN" ]; then
+    gh release create --draft --title="$tag" --notes-file=- --target="$sha" -- "$tag"
+  else
+    echo "Create Release $tag at $sha" >&2
+    cat -
+  fi
+}
+
+
+pre_reqs || force
+notes_since "$(previous_tag)" | create "${tag:-$(date_tag)}" "$(head_sha)"
