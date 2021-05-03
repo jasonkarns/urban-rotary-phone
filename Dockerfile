@@ -10,12 +10,3 @@ COPY Gemfile* ./
 RUN bundle install
 
 COPY . .
-
-# If a server.pid was copied over, remove it (so we can run inside Docker)
-# RUN ["rm", "-f", "/app/tmp/pids/server.pid"]
-# COPY ./docker-entrypoint.sh /
-# ENTRYPOINT ["/docker-entrypoint.sh"]
-
-# EXPOSE 3000
-
-# CMD ["rails", "server", "-b", "0.0.0.0"]
