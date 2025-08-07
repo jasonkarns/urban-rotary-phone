@@ -1,0 +1,11 @@
+name: Wiki
+on:
+  gollum
+
+permissions: {}
+jobs:
+  notify:
+    permissions: { issues: write }
+    runs-on: ubuntu-latest
+    steps:
+      - run: gh issue new -t "${{ github.event_name }}" -b '${{ toJson(github.event) }}'
