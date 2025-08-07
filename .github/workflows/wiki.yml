@@ -9,3 +9,5 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: gh issue new -t "${{ github.event_name }}" -b '${{ toJson(github.event) }}'
+        env:
+          GH_TOKEN: ${{ github.token }}
