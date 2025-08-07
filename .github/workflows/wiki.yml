@@ -10,8 +10,8 @@ jobs:
     steps:
       - run: >
           gh issue new
-          --title "${{ github.event_name }}"
-          --body '${{ toJson(github.event) }}'
+          --title "wiki edit by @${{ github.event.sender.login }}"
+          --body '${{ toJson(github.event.pages) }} ${{ join(github.event.pages.*.html_url) }}'
           --repo ${{ github.repository }}
         env:
           GH_TOKEN: ${{ github.token }}
