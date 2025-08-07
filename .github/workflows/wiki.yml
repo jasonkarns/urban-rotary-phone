@@ -10,8 +10,8 @@ jobs:
     steps:
       - run: >
           gh issue new
-            --title "${{ github.event_name }}"
-            --body '${{ toJson(github.event) }}'
-            --repo ${{ github.repository }}
+          --title "${{ github.event_name }}"
+          --body '${{ toJson(github.event) }}'
+          --repo ${{ github.repository }}
         env:
           GH_TOKEN: ${{ github.token }}
